@@ -1,5 +1,5 @@
 ﻿<#
- https://github.com/squid808/
+ https://github.com/v-karapa/CANVAS_SDS_SCRIPT
  Use at your own risk and stuff
 
  This project contains the main methods for the Canvas APIs as well
@@ -133,14 +133,28 @@ foreach($x in $xyz)
 $tempCSV = Import-Csv Accounts.csv -Header "SIS ID","Name","workflow_state","parent_account_id","root_account_id","uuid","default_storage_quota_mb","default_user_storage_quota_mb","default_group_storage_quota_mb","default_time_zone" | select -skip 1 | sort 'SIS ID','Name' -Unique
 $tempCSV | Export-CSV School.csv -NoTypeInformation 
 
-write-host "creating courses.csv file"
+write-host "creating Sync.csv file"
 #courses details
     $results = Get-CanvasApiResult -Uri "/api/v1/accounts/1/courses" -Method GET
     $results | convertto-Csv -NoTypeInformation
-    $results | Export-csv "courses.csv" -Append -NoTypeInformation
+    $results | Export-csv "courses.csv" -NoTypeInformation
     $courses = import-csv "courses.csv"
-    $id = $courses.id
+    
+  #Check is Sync.csv is present - if not create else nothing
+  if (Test-Path Sync.csv) {
+    write-host "Sync.csv File already exists."
+}
+  else{
+    Set-Content "Sync.csv" -Value "id"
+    write-host "Provide course id in Sync.csv file"
+   }
+   
+$proceed = Read-host " Press Y to continue "
+if ($proceed -eq 'Y')
+{
+  $Sync = import-csv "Sync.csv" -Header id |select -skip 1
 
+$id = $Sync.id
 write-host "creating Section.csv file"  
 #Section Details
 foreach($i in $id)
@@ -184,7 +198,7 @@ foreach ($order1 in $OrdersA){
     }
 }
 
-write-host "creating students.csv"
+write-host "creating student.csv"
   
   $tempsection = import-csv sectionTemp.csv
   $secid = $tempsection.id
@@ -402,14 +416,18 @@ Import-Csv -Path 'Teacher0.csv' | select 'Section SIS ID', 'SIS ID' | sort 'Sect
 
 Import-Csv -Path 'student0.csv' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' -Unique | Export-Csv Teacherroster1.csv -NoTypeInformation
 
-#>
+
 remove-item Accounts.csv
-remove-item courses.csv
 remove-item sectionTemp.csv
 remove-item Fulluser.csv
 remove-item usersall.csv
 remove-item usernew.csv
 remove-item users.csv
+#>
+}
+else {
+write-host "You need to provide sync.csv in order to continue..." }
+
 $end = [system.datetime]::Now
 $resultTime = $end - $start
 Write-Host "Execution took : $($resultTime.TotalSeconds) seconds."
