@@ -1,1 +1,0 @@
-﻿$courses = import-csv "courses.csv"

@@ -140,18 +140,6 @@ write-host "creating Sync.csv file"
     $results | Export-csv "courses.csv" -NoTypeInformation
     $courses = import-csv "courses.csv"
     
-  #Check is Sync.csv is present - if not create else nothing
-  if (Test-Path Sync.csv) {
-    write-host "Sync.csv File already exists."
-}
-  else{
-    Set-Content "Sync.csv" -Value "id"
-    write-host "Provide course id in Sync.csv file"
-   }
-   
-$proceed = Read-host " Press Y to continue "
-if ($proceed -eq 'Y')
-{
   $Sync = import-csv "Sync.csv" -Header id |select -skip 1
 
 $id = $Sync.id
@@ -427,7 +415,7 @@ remove-item users.csv
 remove-item courses.csv
 
 
-}
+
 else {
 write-host "You need to provide sync.csv in order to continue..." }
 
