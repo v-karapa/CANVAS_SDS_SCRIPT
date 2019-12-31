@@ -173,7 +173,7 @@ foreach ($order1 in $OrdersA){
     $matched = $false
     foreach ($order2 in $courses)
     {
-         $obj = "" | select "SIS ID","course_id","Section Name","start_at","end_at","created_at","restrict_enrollments_to_section_dates","nonxlist_course_id","sis_section_id","sis_course_id","integration_id","sis_import_id","School SIS ID"
+         $obj = "" | select "SIS ID","course_id","Section Name","Term StartDate","Term EndDate","created_at","restrict_enrollments_to_section_dates","nonxlist_course_id","sis_section_id","sis_course_id","integration_id","sis_import_id","School SIS ID"
         if(($order1.'course_id' -replace "A" ) -eq $order2.'id' )
         {
             $matchCounter++
@@ -181,8 +181,8 @@ foreach ($order1 in $OrdersA){
             $obj.'SIS ID' = $order1. 'id'
             $obj.'course_id' = $order1.'course_id'
             $obj.'Section Name' = $order1.'name'
-            $obj.'start_at' = $order1.'start_at'
-            $obj.'end_at' = $order1.'end_at'
+            $obj.'Term StartDate' = $order1.'start_at'
+            $obj.'Term EndDate' = $order1.'end_at'
             $obj.'created_at' = $order1.'created_at'
             $obj.'restrict_enrollments_to_section_dates' = $order1.'restrict_enrollments_to_section_dates'
             $obj.'nonxlist_course_id' = $order1.'nonxlist_course_id'
@@ -417,7 +417,7 @@ Import-Csv -Path 'Teacher0.csv' | select 'Section SIS ID', 'SIS ID' | sort 'Sect
 
 Import-Csv -Path 'student0.csv' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' -Unique | Export-Csv Teacherroster1.csv -NoTypeInformation
 
-#>
+
 remove-item Accounts.csv
 remove-item sectionTemp.csv
 remove-item Fulluser.csv
@@ -426,7 +426,7 @@ remove-item usernew.csv
 remove-item users.csv
 remove-item courses.csv
 
-
+#>
 }
 else {
 write-host "You need to provide sync.csv in order to continue..." }
