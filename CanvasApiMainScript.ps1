@@ -416,7 +416,7 @@ Import-Csv -Path 'student0.csv'| sort 'SIS ID' -Unique | Export-Csv Student10.cs
 Import-Csv -Path 'Teacher0.csv' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' -Unique | Export-Csv StudentEnrollment1.csv -NoTypeInformation
 
 Import-Csv -Path 'student0.csv' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' -Unique | Export-Csv Teacherroster1.csv -NoTypeInformation
-
+#>
 
 remove-item Accounts.csv
 remove-item sectionTemp.csv
@@ -426,7 +426,7 @@ remove-item usernew.csv
 remove-item users.csv
 remove-item courses.csv
 
-#>
+
 }
 else {
 write-host "You need to provide sync.csv in order to continue..." }
