@@ -161,7 +161,7 @@ foreach ($order1 in $OrdersA){
     $matched = $false
     foreach ($order2 in $courses)
     {
-         $obj = "" | select "SIS ID","course_id","Section Name","start_at","end_at","created_at","restrict_enrollments_to_section_dates","nonxlist_course_id","sis_section_id","sis_course_id","integration_id","sis_import_id","School SIS ID"
+         $obj = "" | select "SIS ID","course_id","Section Name","Term StartDate","Term EndDate","restrict_enrollments_to_section_dates","nonxlist_course_id","sis_section_id","sis_course_id","integration_id","sis_import_id","School SIS ID"
         if(($order1.'course_id' -replace "A" ) -eq $order2.'id' )
         {
             $matchCounter++
@@ -169,8 +169,8 @@ foreach ($order1 in $OrdersA){
             $obj.'SIS ID' = $order1. 'id'
             $obj.'course_id' = $order1.'course_id'
             $obj.'Section Name' = $order1.'name'
-            $obj.'start_at' = $order1.'start_at'
-            $obj.'end_at' = $order1.'end_at'
+            $obj.'Term StartDate' = $order1.'start_at'
+            $obj.'Term EndDate' = $order1.'end_at'
             $obj.'created_at' = $order1.'created_at'
             $obj.'restrict_enrollments_to_section_dates' = $order1.'restrict_enrollments_to_section_dates'
             $obj.'nonxlist_course_id' = $order1.'nonxlist_course_id'
