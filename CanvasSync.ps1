@@ -131,7 +131,7 @@ foreach($x in $xyz)
 }
 
 $tempCSV = Import-Csv Accounts.csv -Header "SIS ID","Name","workflow_state","parent_account_id","root_account_id","uuid","default_storage_quota_mb","default_user_storage_quota_mb","default_group_storage_quota_mb","default_time_zone" | select -skip 1 | sort 'SIS ID','Name' -Unique
-$tempCSV | Export-CSV School.csv -NoTypeInformation 
+$tempCSV | Export-CSV school.csv -NoTypeInformation 
 
 write-host "creating Sync.csv file"
 #courses details
@@ -181,7 +181,7 @@ foreach ($order1 in $OrdersA){
             $obj.'School SIS ID' = $order2.'account_id'
                        
             Write-Host "Match Found Orders " "$matchCounter"
-            $obj | Export-Csv -Path Section.csv -Append -NoTypeInformation
+            $obj | Export-Csv -Path section.csv -Append -NoTypeInformation
         }
     }
 }
@@ -202,7 +202,7 @@ foreach($s in $secid)
 
 $matchcounter = 0
 $user= import-csv users.csv
-$Section = import-csv Section.csv
+$Section = import-csv section.csv
 
 foreach ($order1 in $user){
     $matched = $false
@@ -240,9 +240,9 @@ foreach ($order1 in $user){
     }
 }
 
-Import-Csv -Path 'usernew.csv' | ? role -eq 'StudentEnrollment' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' | Export-Csv StudentEnrollment.csv -NoTypeInformation
+Import-Csv -Path 'usernew.csv' | ? role -eq 'StudentEnrollment' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' | Export-Csv studentEnrollment.csv -NoTypeInformation
 
-Import-Csv -Path 'usernew.csv' | ? role -eq 'TeacherEnrollment' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' | Export-Csv Teacherroster.csv -NoTypeInformation
+Import-Csv -Path 'usernew.csv' | ? role -eq 'TeacherEnrollment' | select 'Section SIS ID', 'SIS ID' | sort 'Section SIS ID', 'SIS ID' | Export-Csv teacherroster.csv -NoTypeInformation
 
 
 $results = Get-CanvasApiResult -Uri "/api/v1/accounts/1/users" -Method GET
@@ -287,9 +287,9 @@ foreach ($order1 in $Fulluser){
     }
 }
 
-Import-Csv -Path 'usersall.csv' | ? role -eq 'StudentEnrollment' | sort 'SIS ID', 'School SIS ID' -Unique | Export-Csv Student.csv -NoTypeInformation
+Import-Csv -Path 'usersall.csv' | ? role -eq 'StudentEnrollment' | sort 'SIS ID', 'School SIS ID' -Unique | Export-Csv student.csv -NoTypeInformation
 
-Import-Csv -Path 'usersall.csv' | ? role -eq 'TeacherEnrollment' | sort 'SIS ID', 'School SIS ID' -Unique | Export-Csv Teacher.csv -NoTypeInformation
+Import-Csv -Path 'usersall.csv' | ? role -eq 'TeacherEnrollment' | sort 'SIS ID', 'School SIS ID' -Unique | Export-Csv teacher.csv -NoTypeInformation
 
 <#
 #if you want details with courses run below script
