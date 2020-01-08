@@ -133,14 +133,15 @@ foreach($x in $xyz)
 $tempCSV = Import-Csv Accounts.csv -Header "SIS ID","Name","workflow_state","parent_account_id","root_account_id","uuid","default_storage_quota_mb","default_user_storage_quota_mb","default_group_storage_quota_mb","default_time_zone" | select -skip 1 | sort 'SIS ID','Name' -Unique
 $tempCSV | Export-CSV school.csv -NoTypeInformation 
 
-write-host "creating Sync.csv file"
+
 #courses details
     $results = Get-CanvasApiResult -Uri "/api/v1/accounts/1/courses" -Method GET
     $results | convertto-Csv -NoTypeInformation
     $results | Export-csv "courses.csv" -NoTypeInformation
     $courses = import-csv "courses.csv"
-    
-  $Sync = import-csv "Sync.csv" -Header id |select -skip 1
+if (Test-Path Sync.csv)
+{    
+$Sync = import-csv "Sync.csv" -Header id |select -skip 1
 
 $id = $Sync.id
 write-host "creating Section.csv file"  
@@ -413,11 +414,10 @@ remove-item usersall.csv
 remove-item usernew.csv
 remove-item users.csv
 remove-item courses.csv
-
-
-
+}
 else {
-write-host "You need to provide sync.csv in order to continue..." }
+write-host "You need to provide sync.csv in order to continue..." 
+}
 
 $end = [system.datetime]::Now
 $resultTime = $end - $start
