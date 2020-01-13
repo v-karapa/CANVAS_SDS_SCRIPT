@@ -1,7 +1,6 @@
 ﻿##########Canfile Upload##########
 #check configuration file is available or not
 param(
-      [Parameter(Mandatory=$true)][System.String]$appName,
       [Parameter(Mandatory=$true)][System.String]$Username,
       [Parameter(Mandatory=$true)][System.String]$Password,
       [Parameter(Mandatory=$true)][System.String]$SyncprofileName
@@ -10,18 +9,33 @@ param(
 if (-not (test-path conf.json))
 {
 #connect AzureAD
-write-host "provide your login credentials"
-Connect-AzureAD
+$secpasswd = ConvertTo-SecureString $Password -AsPlainText -Force
+$mycreds = New-Object System.Management.Automation.PSCredential ($Username, $secpasswd)
+$res = Connect-AzureAD -Credential $mycreds
+
 
 #create Azure application
-      
-        $appHomePageUrl = "http://sissync.microsoft.com"
-        $appURI = "http://sissync.microsoft.com/" + "$appName"
+        $appName = 'connectsds'
+        $appHomePageUrl = 'http://sissync.microsoft.com'
+        $appURI = "http://sissync.microsoft.com/connectsds"
         $appReplyURLs = "https://localhost:1234"
+
+##required resourceAccess
+$svcprincipal = Get-AzureADServicePrincipal -All $true | ? { $_.DisplayName -match "Microsoft Graph" }
+$reqGraph = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
+$reqGraph.ResourceAppId = $svcprincipal.AppId
+
+##ResourceAccess-  Delegated Permissions
+$delPermission1 = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList "0e263e50-5827-48a4-b97c-d940288653c7","Scope" #Access Directory as the signed in user
+$appPermission1 = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList 63589852-04e3-46b4-bae9-15d5b1050748,"Scope" 
+$appPermission2 = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList 8523895c-6081-45bf-8a5d-f062a2f12c9f,"Scope"
+
+#apply permistions to app
+$reqGraph.ResourceAccess = $delPermission1, $appPermission1, $appPermission2
 
 if(!($myApp = Get-AzureADApplication -Filter "DisplayName eq '$($appName)'"  -ErrorAction SilentlyContinue))
 {
-    $myApp = New-AzureADApplication -DisplayName $appName -IdentifierUris $appURI -Homepage $appHomePageUrl -ReplyUrls $appReplyURLs    
+    $myApp = New-AzureADApplication -DisplayName $appName -IdentifierUris $appURI -Homepage $appHomePageUrl -ReplyUrls $appReplyURLs -RequiredResourceAccess $reqGraph    
 }
 
 # Application (client) ID, tenant Name
@@ -32,6 +46,13 @@ $tenant = Get-AzureADTenantDetail
 $tenantid = $tenant.ObjectId
 $Domaininfo = $tenant.VerifiedDomains
 $Domain = $Domaininfo.Name
+
+#Grant Adminconsent
+$Grant= 'https://login.microsoftonline.com/common/adminconsent?client_id='
+$admin = '&state=12345&redirect_uri=https://localhost:1234'
+$Grantadmin= $Grant + $client_Id + $admin
+
+start $Grantadmin
 
 #Getting SKuid
 $skuid = Get-AzureADSubscribedSku | select 
@@ -45,8 +66,10 @@ $teacherlicense = $teacherskuIds.skuId
 #creating client secret
 $startDate = Get-Date
 $endDate = $startDate.AddYears(3)
-$clientSecret = New-AzureADApplicationPasswordCredential -ObjectId $ObjectId -CustomKeyIdentifier "Secret01" -StartDate $startDate -EndDate $endDate
+$clientSecret = New-AzureADApplicationPasswordCredential -ObjectId $ObjectId -CustomKeyIdentifier "Secret" -StartDate $startDate -EndDate $endDate
 $Client_Secret = $clientSecret.Value
+
+
         
     $conf = [ordered]@{
     SyncprofileName= $SyncprofileName    
@@ -67,9 +90,7 @@ $conf | ConvertTo-Json | Out-File -FilePath conf.json
 else
   {
     $conffile = get-content conf.json | ConvertFrom-Json
-  }
-
-##Token generation
+  
     $SyncprofileName= $conffile.SyncprofileName
     $client_Id     = $conffile.client_Id
     $Client_Secret = $conffile.Client_Secret
@@ -79,7 +100,8 @@ else
     $Domain        = $conffile.Domain
     $teacherlicense    = $conffile.Teacherlicense
     $studentlicense    = $conffile.Studentlicense
-    
+    }
+    ##Token generation
     $loginurl = "https://login.microsoftonline.com/" + "$tenantid" + "/oauth2/v2.0/token"
 
     $ReqTokenBody = @{
@@ -101,9 +123,9 @@ $Header = @{
 
 #####create synchronization profiles####
 
-$body = 
-{
-    displayName = $New_synchronization_profile_Name
+$body =
+@{
+    displayName = $SyncprofileName
     dataProvider = 
         @{(odata.type) = "#Microsoft.Education.DataSync.educationCsvDataProvider"
         customizations = {
@@ -111,7 +133,7 @@ $body =
         }
     }
     identitySynchronizationConfiguration = 
-        @{(odata.type) = "#Microsoft.Education.DataSync.educationIdentityCreationConfiguration"
+        @{(data.type) = "#Microsoft.Education.DataSync.educationIdentityCreationConfiguration"
         userDomains = {
             {
                 appliesTo = "teacher",
@@ -134,10 +156,12 @@ $body =
             }
     }
 }
-$createdprofile = Invoke-RestMethod -Headers $Header -Uri $Uri -Body $body -Method Post -ContentType 'application/json'
+
+$createdprofile = Invoke-RestMethod -Headers $Header -Uri 'https://graph.microsoft.com/beta/education/synchronizationProfiles' -Body $body -Method Post -ContentType 'application/json'
+$NewsyncID = $createdprofile.id
 
 #create upload url
-$Uri1 = "https://graph.microsoft.com/beta/education/synchronizationProfiles/f7ae02dd-de69-415c-bf24-9b8f22af6d9b/uploadUrl"
+$Uri1 = "https://graph.microsoft.com/beta/education/synchronizationProfiles/" + "$NewsyncID" + "/uploadurl"
 $uploadurl = Invoke-RestMethod -Uri $Uri1 -Headers $Header -Method Get -ContentType "application/json"
 
 $b = $uploadurl.value
@@ -151,7 +175,7 @@ $u >sastoken.cmd
 start-process -FilePath sastoken.cmd
 
 #Run start sync profile
-$UriStart = "https://graph.microsoft.com/beta/education/synchronizationProfiles/2f7c47a3-866e-4510-a926-70d7434b2b18/start"
+$UriStart = "https://graph.microsoft.com/beta/education/synchronizationProfiles/" + "$NewsyncID" + "/start"
 $start = Invoke-RestMethod -Uri $UriStart -Headers $Header -Method Post -ContentType "application/json"
 $start
 
