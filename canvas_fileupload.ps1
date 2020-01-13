@@ -1,19 +1,20 @@
 ﻿##########Canfile Upload##########
 #check configuration file is available or not
-
-if (-not (test-path conf.json))
-{
-
-#connect AzureAD
-Connect-AzureAD
-
-#create Azure application
 param(
       [Parameter(Mandatory=$true)][System.String]$appName,
       [Parameter(Mandatory=$true)][System.String]$Username,
       [Parameter(Mandatory=$true)][System.String]$Password,
-      [Parameter(Mandatory=$true)][System.String]$New_synchronization_profile_Name
-      )      
+      [Parameter(Mandatory=$true)][System.String]$SyncprofileName
+      )
+
+if (-not (test-path conf.json))
+{
+#connect AzureAD
+write-host "provide your login credentials"
+Connect-AzureAD
+
+#create Azure application
+      
         $appHomePageUrl = "http://sissync.microsoft.com"
         $appURI = "http://sissync.microsoft.com/" + "$appName"
         $appReplyURLs = "https://localhost:1234"
@@ -29,7 +30,8 @@ $ObjectId = (Get-AzureADApplication -Filter "DisplayName eq '$($appName)'" | sel
 $resource = "https://graph.microsoft.com/"
 $tenant = Get-AzureADTenantDetail
 $tenantid = $tenant.ObjectId
-$Domain = $tenant.VerifiedDomains
+$Domaininfo = $tenant.VerifiedDomains
+$Domain = $Domaininfo.Name
 
 #Getting SKuid
 $skuid = Get-AzureADSubscribedSku | select 
