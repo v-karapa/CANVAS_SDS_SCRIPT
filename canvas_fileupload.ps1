@@ -66,7 +66,7 @@ $teacherlicense = $teacherskuIds.skuId
 #creating client secret
 $startDate = Get-Date
 $endDate = $startDate.AddYears(3)
-$clientSecret = New-AzureADApplicationPasswordCredential -ObjectId $ObjectId -CustomKeyIdentifier "Secret" -StartDate $startDate -EndDate $endDate
+$clientSecret = New-AzureADApplicationPasswordCredential -ObjectId $ObjectId -CustomKeyIdentifier "Secret1" -StartDate $startDate -EndDate $endDate
 $Client_Secret = $clientSecret.Value
 
 
@@ -123,39 +123,49 @@ $Header = @{
 
 #####create synchronization profiles####
 
-$body =
-@{
-    displayName = $SyncprofileName
-    dataProvider = 
-        @{(odata.type) = "#Microsoft.Education.DataSync.educationCsvDataProvider"
-        customizations = {
-            student = {optionalPropertiesToSync = ("State ID", "Middle Name")}
+$body = '{
+    "displayName": "'+$SyncprofileName+'",
+    "dataProvider": {
+        "@odata.type": "#Microsoft.Education.DataSync.educationCsvDataProvider",
+        "customizations": {
+            "student": {
+                "optionalPropertiesToSync": [
+                    "State ID",
+                    "Middle Name"
+                ]
+            }
         }
-    }
-    identitySynchronizationConfiguration = 
-        @{(data.type) = "#Microsoft.Education.DataSync.educationIdentityCreationConfiguration"
-        userDomains = {
+    },
+    "identitySynchronizationConfiguration": {
+        "@odata.type": "#Microsoft.Education.DataSync.educationIdentityCreationConfiguration",
+        "userDomains": [
             {
-                appliesTo = "teacher",
-                name = $Domain
+                "appliesTo": "student",
+                "name":  "'+$Domain+'"
             },
             {
-                appliesTo = "teacher",
-                name = $Domain
+                "appliesTo": "teacher",
+                "name": "'+$Domain+'"
             }
+        ]
+    },
+    "licensesToAssign": [
+        {
+            "appliesTo": "teacher",
+            "skuIds": [
+                 "'+$teacherlicense+'"
+            ]
+        },
+        {
+            "appliesTo": "student",
+            "skuIds": [
+                 "'+$studentlicense+'"
+            ]
         }
-    }
-    licensesToAssign = {
-        {
-            appliesTo = "teacher",
-            skuIds = $teacherlicense
-             },
-        {
-            appliesTo = "student",
-            skuIds = $studentlicense
-            }
-    }
-}
+    ]
+}'
+
+
 
 $createdprofile = Invoke-RestMethod -Headers $Header -Uri 'https://graph.microsoft.com/beta/education/synchronizationProfiles' -Body $body -Method Post -ContentType 'application/json'
 $NewsyncID = $createdprofile.id
