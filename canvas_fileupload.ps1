@@ -1,13 +1,15 @@
 ﻿##########Canfile Upload##########
 #check configuration file is available or not
+
+
+if (-not (test-path conf.json))
+{
 param(
       [Parameter(Mandatory=$true)][System.String]$Username,
       [Parameter(Mandatory=$true)][System.String]$Password,
       [Parameter(Mandatory=$true)][System.String]$SyncprofileName
       )
 
-if (-not (test-path conf.json))
-{
 #connect AzureAD
 $secpasswd = ConvertTo-SecureString $Password -AsPlainText -Force
 $mycreds = New-Object System.Management.Automation.PSCredential ($Username, $secpasswd)
@@ -65,8 +67,10 @@ $teacherlicense = $teacherskuIds.skuId
 
 #creating client secret
 $startDate = Get-Date
+$currentdate = get-date -format "ddmmyyyyhhmm"
 $endDate = $startDate.AddYears(3)
-$clientSecret = New-AzureADApplicationPasswordCredential -ObjectId $ObjectId -CustomKeyIdentifier "Secret1" -StartDate $startDate -EndDate $endDate
+$customkeyid = "secret" + "$currentdate" 
+$clientSecret = New-AzureADApplicationPasswordCredential -ObjectId $ObjectId -CustomKeyIdentifier $customkeyid -StartDate $startDate -EndDate $endDate
 $Client_Secret = $clientSecret.Value
 
 
@@ -121,8 +125,11 @@ $Header = @{
     Authorization = "$($token.token_type) $($token.access_token)"
 }
 
-#####create synchronization profiles####
 
+
+if($NewsyncID -eq $null){
+#####create synchronization profiles####
+write-host "creating new sync profile"
 $body = '{
     "displayName": "'+$SyncprofileName+'",
     "dataProvider": {
@@ -168,24 +175,43 @@ $body = '{
 
 
 $createdprofile = Invoke-RestMethod -Headers $Header -Uri 'https://graph.microsoft.com/beta/education/synchronizationProfiles' -Body $body -Method Post -ContentType 'application/json'
+
 $NewsyncID = $createdprofile.id
 
+
 #create upload url
+write-host "creating upload url"
 $Uri1 = "https://graph.microsoft.com/beta/education/synchronizationProfiles/" + "$NewsyncID" + "/uploadurl"
 $uploadurl = Invoke-RestMethod -Uri $Uri1 -Headers $Header -Method Get -ContentType "application/json"
 
-$b = $uploadurl.value
-$a = 'C:\azcopy\azcopy.exe copy "C:\local\*.*" '
-$c = ' --recursive=true --check-length=false'
 
-$u = "$a" + "'$b'" + "$c"
+$b = $uploadurl.value
+ 
+$a = '\azcopy.exe azcopy cp "\*.csv" "'
+$c = '" --recursive=true --check-length=false'
+
+$u = "$a" + "$b" + "$c"
+if(test-path sastoken.cmd){
+remove-item sastoken.cmd
+}
+
 $u >sastoken.cmd
 
 #run azcopy file and upload files using azcopy
 start-process -FilePath sastoken.cmd
 
+
+write-host "Starting sync"
 #Run start sync profile
 $UriStart = "https://graph.microsoft.com/beta/education/synchronizationProfiles/" + "$NewsyncID" + "/start"
 $start = Invoke-RestMethod -Uri $UriStart -Headers $Header -Method Post -ContentType "application/json"
 $start
+}
+
+else{
+write-host "getting sync status"
+$Uri1 = "https://graph.microsoft.com/beta/education/synchronizationProfiles/" + "$NewsyncID"
+$status = Invoke-RestMethod -Uri $Uri1 -Headers $Header -Method Get -ContentType "application/json"
+$status
+}
 
